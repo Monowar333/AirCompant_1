@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="uk">
+<meta charset="UTF-8">
+
+<head>
+    <link href="styles/bootstrap.css" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+    <script src="script/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          requestTable = new XMLHttpRequest();
+          requestTable.open("GET", "http://localhost:8080/public/search?status=OPEN", true);
+          requestTable.send(null);
+
+          requestTable.onreadystatechange = function () {
+            if (requestTable.readyState == 4 && requestTable.status == 200)
+              var data = requestTable.responseText;
+              fillTable(data)
+          }
+
+         loadMenu()
+
+          loadData('origin')
+          loadData('destination')
+
+        });
+
+        function fillTable(data) {
+
+          table = document.getElementById('flights');
+
+          items = JSON.parse(data);
+
+          for (i = 0; i < items.length; i++) {
+            var tr = document.createElement('tr');
+
+            var td = document.createElement('td');
+            td.innerHTML = items[i].id;
+            tr.appendChild(td);
+
+            var td1 = document.createElement('td');
+            td1.innerHTML = items[i].number;
+            tr.appendChild(td1);
+
+            var td2 = document.createElement('td');
+            td2.innerHTML = items[i].origin.country + ',' + items[i].origin.code + ',' + items[i].origin.name;
+            tr.appendChild(td2);
+
+            var td3 = document.createElement('td');
+            td3.innerHTML = items[i].destination.country + ',' + items[i].destination.code + ',' + items[i].destination.name;
+            tr.appendChild(td3);
+
+            var td4 = document.createElement('td');
+            td4.innerHTML = new Date(items[i].etd).toLocaleString();
+            tr.appendChild(td4);
+
+            var td5 = document.createElement('td');
+            td5.innerHTML = new Date(items[i].eta).toLocaleString();
+            tr.appendChild(td5);
+
+            var td6 = document.createElement('td');
+            td6.innerHTML = items[i].status;
+            tr.appendChild(td6);
+
+            table.appendChild(tr);
+          }
+        }
+
+        //Заповнення селекта
+        async function loadData(dataName) {
+          let appArr;
+          try {
+            //використаний для того щоб гарантувати заповнення даних тільки після загрузки з BE
+            items = await fetch("http://localhost:8080/public/country").then(res => res.json());
+            //беремо документ по ID
+            var select = document.getElementById(dataName);
+
+            //додаємо до ліста отриманні данні з BE
+            for (i = 0; i < items.length; i++) {
+              console.log(items[i].value)
+              var opt = document.createElement('option');
+              opt.value = items[i]
+              opt.innerHTML = items[i];
+              select.appendChild(opt);
+            }
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
+        function getHtml(val) {
+          return val != null ? val.value : '';
+        }
+
+        function search_form(form) {
+          request = new XMLHttpRequest();
+
+          var url = 'http://localhost:8080/public/search?status=OPEN';
+
+          var els = form.elements;
+          var jsonData = {};
+
+          //білдимо серч урл
+          for (i = 0; i < els.length; i++) {
+
+            if (els[i].type != 'button' && els[i].id != null) {
+
+              if (els[i].value) {
+                if (url.slice(-1) != '?') {
+                  url = url + '&'
+                }
+
+                var value = els[i].value
+                if (els[i].type == "datetime-local") {
+                  var miliss = new Date(els[i].value);
+                  value = miliss.getTime()
+                }
+
+                url = url + els[i].name + '=' + value
+              }
+            }
+          }
+          request.open('GET', url, true);
+          request.setRequestHeader('Content-type', 'application/json');
+
+          request.onreadystatechange = function (oEvent) {
+            if (request.readyState === 4) {
+              if (request.status === 200) {
+                //видаляємо попередні данні c таблиці
+                table = document.getElementById('flights');
+                for (var i = 1; i < table.rows.length;) {
+                  table.deleteRow(i);
+                }
+
+                var data = request.responseText;
+                fillTable(data)
+              }
+            }
+          }
+          request.send(null);
+        }
+    </script>
+    <title>Розклад Польотів</title>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Навігаційне меню</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav" id="ulItems">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="index.html">Головна сторінка</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</nav>
+<br>
+<form id="flightSearch" name="flightSearch">
+    <br /><label for="origin">Країна відправлення</label>
+    <select name=origin id=origin>
+        <option value="">-- Обрати –--
+    </select>
+    <br /><label for="destination">Країна прибуття</label>
+    <select name=destination id=destination>
+        <option value="">-- Обрати –--
+    </select>
+    <br /><label for="etd">Час відправки</label>
+    <input type="datetime-local" id=etd name="etd" />
+    <br /><label for="eta">Час прибуття</label>
+    <input type="datetime-local" id=eta name="eta" />
+    <br /><input type="button" class="btn1" id="fsubmit" value="Пошук">
+</form>
+<br />
+<br />
+<br />
+<table id="flights">
+    <tr>
+        <th>id</th>
+        <th>Номер польту</th>
+        <th>Місце відправки</th>
+        <th>Місце прибуття</th>
+        <th>Час відправлення</th>
+        <th>Час приюуття</th>
+        <th>Статус</th>
+        <th></th>
+    </tr>
+</table>
+</body>
+
+<script>
+    document.getElementById('fsubmit').onclick = function () {
+      var theForms = document.getElementById("flightSearch");
+      search_form(theForms)
+    };
+</script>
+
+<style>
+    table,
+    th,
+    td {
+      border: 1px solid;
+    }
+
+    form {
+      display: inline-block;
+      margin: auto;
+      border: 1px solid;
+    }
+
+    label {
+      display: inline-block;
+      font-weight: bold;
+      width: 250px;
+      margin: 5px 0px;
+    }
+
+    select {
+      display: inline-block;
+      font-weight: bold;
+      width: 150px;
+      margin: 5px 0px;
+    }
+
+    .btn1 {
+      width: 100%;
+    }
+
+    form blockquote {
+      background: #EEE;
+      text-align: center;
+      margin: 0px;
+      padding: 5px 0px;
+      font-style: italic;
+    }
+</style>
+
+</html>

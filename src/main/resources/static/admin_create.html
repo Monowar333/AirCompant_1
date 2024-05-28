@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk">
+<meta charset="UTF-8">
+
+<head>
+    <link href="styles/bootstrap.css" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+    <script src="script/main.js"></script>
+
+    <script>
+
+        //заповнення даних на моменті коли сторінка готова
+        document.addEventListener("DOMContentLoaded", () => {
+          //вибираємо всі селекти які є на сторінці
+          var selects = document.getElementsByTagName('select');
+          loadMenu()
+          loadData('origin')
+          loadData('destination')
+        });
+
+        //Заповнення селекта
+        async function loadData(dataName) {
+          let appArr;
+          try {
+            //використаний для того щоб гарантувати заповнення даних тільки після загрузки з BE
+            items = await fetch("http://localhost:8080/airports/all").then(res => res.json());
+            //беремо документ по ID
+            var select = document.getElementById(dataName);
+
+            //додаємо до ліста отриманні данні з BE
+            for (i = 0; i < items.length; i++) {
+              console.log(items[i].value)
+              var opt = document.createElement('option');
+              opt.value = items[i].id
+              opt.innerHTML = items[i].country + "," + items[i].code + "," + items[i].name;
+              select.appendChild(opt);
+            }
+          } catch (err) {
+            console.error(err)
+          }
+        }
+
+        function post_form(form) {
+          request = new XMLHttpRequest();
+
+          request.open('POST', 'http://localhost:8080/flight/creation', true);
+
+          request.setRequestHeader('Content-type', 'application/json');
+
+          var els = form.elements;
+          var jsonData = {};
+
+          //збираємо данні з форми і якщо данні присутні заповнюємо таблицю
+          for (i = 0; i < els.length; i++) {
+
+            if (els[i].type != 'button') {
+              var lb = get_label(els[i]);
+
+              if (lb && els[i].value) {
+                var value = els[i].value
+                if (els[i].type == "datetime-local") {
+                  var miliss = new Date(els[i].value);
+                  value = miliss.getTime()
+                }
+                jsonData[els[i].id] = value;
+
+                //reset previous validation result
+                els[i].style.color = "black";
+              }
+            }
+          }
+
+          request.onreadystatechange = function (oEvent) {
+            if (request.readyState === 4) {
+              if (request.status === 200) {
+                console.log(request.responseText);
+                location.href = "admin_cabinet.html";
+              } else {
+                // парсимо реквест з BE формат {key: value, key: value, key: value}
+                //де key це ID елементаб value текс помилкм
+                errors = JSON.parse(request.responseText)
+
+                for (var property in errors) {
+                  element = document.getElementById(property);
+                  //додаємо текст помилки валідації
+                  element.setCustomValidity(errors[property]);
+                  //всі елементи з помилками підсвічуються червоним
+                  element.style.color = "red";
+                  element.reportValidity();
+                }
+              }
+            }
+          }
+
+          request.send(JSON.stringify(jsonData));
+        }
+
+        function get_label(el) {
+          var lbls = el.form.getElementsByTagName('label');
+          for (l = 0; l < lbls.length; l++) {
+            if (lbls[l].control && (lbls[l].control.id == el.id))
+              return lbls[l];
+          }
+          return 0;
+        }
+    </script>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Навігаційне меню</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav" id="ulItems">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="index.html">Головна сторінка</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</nav>
+<form name="productCreation">
+    <blockquote>Додайте новий Рейс</blockquote>
+    <fieldset>
+        <legend>Основна Інформація</legend>
+        <label for="flightNumber">Номер</label>
+        <input type="text" name="flightNumber" id="flightNumber" size="50" value="">
+        <br /><label for="origin">Місце відправки</label>
+        <select name=origin id=origin>
+            <option value="">-- Обрати –--
+        </select>
+        <br /><label for="destination">Місце прибуття</label>
+        <select name=destination id=destination>
+            <option value="">-- Обрати –--
+        </select>
+        <br /><label for="etd">Час відправки</label>
+        <input type="datetime-local" id=etd name="etd" />
+        <br /><label for="eta">Час прибуття</label>
+        <input type="datetime-local" id=eta name="eta" />
+        <br /><label for="status">Статус</label>
+        <select name=status id=status>
+            <option value="OPEN">Open
+            <option value="IN_PROGRESS">In Progress
+            <option value="COMPLETED">Completed
+            <option value="CANCELLED">Cancelled
+        </select>
+
+    </fieldset>
+    <input type="button" class="btn1" id="fsubmit" value="Зберегти">
+</form>
+
+<script>
+    document.getElementById('fsubmit').onclick = function () {
+      post_form(this.form)
+    };
+</script>
+
+</body>
+
+<style>
+    form {
+      display: inline-block;
+      margin: auto;
+      border: 1px solid;
+    }
+
+    label {
+      display: inline-block;
+      font-weight: bold;
+      width: 250px;
+      margin: 5px 0px;
+    }
+
+    select {
+      display: inline-block;
+      font-weight: bold;
+      width: 150px;
+      margin: 5px 0px;
+    }
+
+    .btn1 {
+      width: 100%;
+    }
+
+    form blockquote {
+      background: #EEE;
+      text-align: center;
+      margin: 0px;
+      padding: 5px 0px;
+      font-style: italic;
+    }
+
+    input:valid {
+      color: green
+    }
+
+    input:invalid {
+      color: red
+    }
+</style>
+
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="uk">
+<meta charset="UTF-8">
+<head>
+    <link href="styles/bootstrap.css" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+    <script src="script/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            request = new XMLHttpRequest();
+            request.open("GET", "http://localhost:8080/ticket/allTickets", true);
+            request.send(null);
+
+            request.onreadystatechange = function() {
+                if (request.readyState==4 && request.status==200) {
+                    var data = request.responseText;
+                    fillTable(data)
+                }
+              }
+
+              loadMenu()
+        });
+
+        function fillTable(data) {
+
+         table = document.getElementById('tickets');
+
+         items = JSON.parse(data);
+
+         for(i=0; i<items.length; i++) {
+             var tr = document.createElement('tr');
+
+             var td = document.createElement('td');
+             td.innerHTML=items[i].id;
+             tr.appendChild(td);
+
+             var td1 = document.createElement('td');
+             td1.innerHTML= items[i].flight.number;
+             tr.appendChild(td1);
+
+             var td2 = document.createElement('td');
+             td2.innerHTML= items[i].flight.origin.country + ',' + items[i].flight.origin.code + ',' + items[i].flight.origin.name;
+             tr.appendChild(td2);
+
+             var td3 = document.createElement('td');
+             td3.innerHTML= items[i].flight.destination.country + ',' + items[i].flight.destination.code + ',' + items[i].flight.destination.name;
+             tr.appendChild(td3);
+
+             var td4 = document.createElement('td');
+             td4.innerHTML = new Date(items[i].flight.etd).toLocaleString();
+             tr.appendChild(td4);
+
+             var td5 = document.createElement('td');
+             td5.innerHTML= new Date(items[i].flight.eta).toLocaleString();
+             tr.appendChild(td5);
+
+             var td6 = document.createElement('td');
+             td6.innerHTML= items[i].flight.status;
+             tr.appendChild(td6);
+
+             var td7 = document.createElement('td');
+             td7.innerHTML= items[i].place;
+             tr.appendChild(td7);
+
+             table.appendChild(tr);
+         }
+        }
+
+        function getHtml(val) {
+            return val != null ? val.value : '';
+        }
+    </script>
+
+</head>
+<body>
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Навігаційне меню</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav" id="ulItems">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="index.html">Головна сторінка</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</nav>
+<br/>
+<a href="user_flight_search.html">Пошук Рейсів</a>
+<br/>
+<table id="tickets">
+    <tr>
+        <th>id</th>
+        <th>Номер польту</th>
+        <th>Місце відправки</th>
+        <th>Місце прибуття</th>
+        <th>Час відправлення</th>
+        <th>Час приюуття</th>
+        <th>Статус</th>
+        <th>Місце</th>
+    </tr>
+</table>
+</body>
+
+<script>
+    document.getElementById('fsubmit').onclick=function() {
+        search_form(this.form)
+    };
+</script>
+
+<style>
+    table, th, td {
+        border: 1px solid;
+    }
+    form {
+        display: inline-block;
+        margin: auto;
+        border: 1px solid;
+    }
+
+    label {
+        display: inline-block;
+        font-weight: bold;
+        width: 250px;
+        margin: 5px 0px;
+    }
+
+    select {
+        display: inline-block;
+        font-weight: bold;
+        width: 150px;
+        margin: 5px 0px;
+    }
+
+    .btn1 {
+        width: 100%;
+    }
+
+    form blockquote {
+        background: #EEE;
+        text-align: center;
+        margin: 0px;
+        padding: 5px 0px;
+        font-style: italic;
+    }
+</style>
+</html>

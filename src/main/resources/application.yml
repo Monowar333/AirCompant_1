@@ -1,0 +1,34 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  config:
+    use-legacy-processing: true
+  application:
+    name: air-company-fe
+  datasource:
+    url: jdbc:postgresql://localhost:5432/air-db
+    username: flyway
+    password: flyway
+  hikari:
+    minimum-idle: 5
+    maximum-pool-size: 1000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+    read-only: true
+  jpa:
+    show-sql: true
+  flyway:
+    validateOnMigrate: false
+
+log4j:
+  logger:
+    org:
+      hibernate:
+        SQL: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: [ "prometheus" ]

@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+<meta charset="UTF-8">
+<head>
+    <link href="styles/bootstrap.css" rel="stylesheet">
+    <link href="styles/style.css" rel="stylesheet">
+    <script src="script/main.js"></script>
+    
+    <script>
+    
+//заповнення даних на моменті коли сторінка готова
+document.addEventListener("DOMContentLoaded", () => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+   var id = urlParams.get('id');
+   loadFlight(id);
+   loadMenu()
+
+   //вибираємо всі селекти які є на сторінці
+   var selects = document.getElementsByTagName('select');
+});
+
+//Заповнення селекта
+async function loadData(dataName) {
+  let appArr;
+  try {
+      //використаний для того щоб гарантувати заповнення даних тільки після загрузки з BE
+      items = await fetch("http://localhost:8080/airports/all").then(res => res.json());
+      //беремо документ по ID 
+      var select = document.getElementById(dataName);
+        
+        //додаємо до ліста отриманні данні з BE 
+        for(i=0; i<items.length; i++) { 
+            console.log(items[i].value)
+            var opt = document.createElement('option');
+            opt.value = items[i].id
+            opt.innerHTML = items[i].country + "," + items[i].code + "," + items[i].name;
+            select.appendChild(opt);
+        }
+  } catch(err) {
+    console.error(err)
+  }
+}
+
+async function loadFlight(input) {
+   var item = await fetch("http://localhost:8080/flight/" + input ).then(res => res.json())
+   var idDoc = document.getElementById('flightId');
+   idDoc.value = item.id;
+
+   var numberDoc = document.getElementById('flightNumber');
+   numberDoc.value = item.number;
+
+   var originDoc = document.getElementById('origin');
+
+  var opt = document.createElement('option');
+  opt.value = item.origin.id;
+  opt.innerHTML = item.origin.country + "," + item.origin.code + "," + item.origin.name;
+  originDoc.appendChild(opt)
+  originDoc.value = item.origin.id;
+
+   var destinationDoc = document.getElementById('destination');
+   opt = document.createElement('option');
+   opt.value = item.destination.id;
+   opt.innerHTML = item.destination.country + "," + item.destination.code + "," + item.destination.name;
+   destinationDoc.appendChild(opt)
+   destinationDoc.value = item.destination.id;
+
+   var statusDoc = document.getElementById('status');
+   opt = document.createElement('option');
+   opt.value = item.destination.id;
+   opt.innerHTML = item.destination.country + "," + item.destination.code + "," + item.destination.name;
+   statusDoc.appendChild(opt)
+   statusDoc.value = item.status;
+
+    const formatDate = (date) => {
+      return date.getFullYear() + "-" + (date.getMonth()+1).toString().padStart(2, '0') + "-" + date.getDate() + "T" + date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
+    }
+
+    var etdDoc = document.getElementById('etd');
+   etdDoc.value = formatDate(new Date(item.etd));
+
+      var etaDoc = document.getElementById('eta');
+   etaDoc.value = formatDate(new Date(item.eta));
+}
+
+function post_form(form) {
+    request = new XMLHttpRequest();
+
+    request.open('POST','http://localhost:8080/ticket/creation',true);
+
+    request.setRequestHeader('Content-type','application/json');
+    
+    var els = form.elements;
+    var jsonData = {};
+    
+    //збираємо данні з форми і якщо данні присутні заповнюємо таблицю
+    for(i=0; i < els.length; i++) {
+    
+        if (els[i].type != 'button') {
+            var lb = get_label(els[i]);
+            
+            if (lb && els[i].value) {
+            var value = els[i].value
+                 if ( els[i].type == "datetime-local") {
+                    var miliss = new Date(els[i].value);
+                    value =  miliss.getTime()
+                 }
+               jsonData[els[i].id] = value;
+
+               //reset previous validation result
+               els[i].style.color = "black";
+            }
+        }   
+    }
+    
+    request.onreadystatechange = function (oEvent) {
+      if (request.readyState === 4) {
+          if (request.status === 200) {
+              console.log(request.responseText);
+              location.href = "user_cabinet.html";
+          } else {
+              // парсимо реквест з BE формат {key: value, key: value, key: value}
+              //де key це ID елементаб value текс помилкм
+              errors = JSON.parse(request.responseText)
+              
+              for (var property in errors) {
+                element = document.getElementById(property);
+                //додаємо текст помилки валідації
+                element.setCustomValidity(errors[property]);
+                //всі елементи з помилками підсвічуються червоним
+                element.style.color = "red";
+                element.reportValidity();
+              }
+          }
+      }
+    }
+
+    request.send(JSON.stringify(jsonData));
+}
+
+function get_label(el) {
+    var lbls = el.form.getElementsByTagName('label');
+    for(l=0; l < lbls.length; l++) {
+        if (lbls[l].control && (lbls[l].control.id == el.id))
+            return lbls[l];
+    }
+    return 0;
+}
+</script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Навігаційне меню</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav" id="ulItems">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="index.html">Головна сторінка</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</nav>
+<form name="productCreation">
+    <blockquote>Придбати квиток</blockquote>
+    <fieldset>
+        <legend>Основна Інформація</legend>
+        <label for="flightId">ID</label>
+        <input class='value-to-submit' type="text" name="flightId" id="flightId" size="50" value="" readonly>
+        <br/><label for="flightNumber">Номер</label>
+        <input type="text" name="flightNumber" id="flightNumber" size="50" value="" readonly>
+        <br/><label for="origin">Місце відправки</label>
+        <select name=origin id=origin readonly>
+        </select>
+        <br/><label for="destination">Місце прибуття</label>
+        <select name=destination id=destination readonly>
+        </select>
+        <br/><label for="etd">Час відправки</label>
+        <input type="datetime-local" id=etd name="etd" readonly/>
+        <br/><label for="eta">Час прибуття</label>
+        <input type="datetime-local" id=eta name="eta" readonly/>
+        <br/><label for="status">Статус</label>
+        <select name=status id=status readonly>
+        </select>
+        <br/><label for="place">Час відправки</label>
+        <select class='value-to-submit' name=place id=place >
+            <option value="1">1
+            <option value="2">2
+            <option value="3">3
+            <option value="4">4
+            <option value="5">5
+            <option value="6">6
+            <option value="7">7
+            <option value="8">8
+            <option value="9">9
+            <option value="11">11
+            <option value="12">12
+            <option value="13">13
+            <option value="14">14
+            <option value="15">15
+            <option value="16">16
+            <option value="17">17
+            <option value="18">18
+            <option value="19">19
+            <option value="21">21
+            <option value="22">22
+            <option value="23">23
+            <option value="24">24
+            <option value="25">25
+            <option value="26">26
+            <option value="27">27
+            <option value="28">28
+            <option value="29">29
+            <option value="31">31
+            <option value="32">32
+            <option value="33">33
+            <option value="34">34
+            <option value="35">35
+            <option value="36">36
+            <option value="37">37
+            <option value="38">38
+            <option value="39">39
+            <option value="41">41
+            <option value="42">42
+            <option value="43">43
+            <option value="44">44
+            <option value="45">45
+            <option value="46">46
+            <option value="47">47
+            <option value="48">48
+            <option value="49">49
+        </select>
+
+    </fieldset>
+    <input type="button" class="btn1" id="fsubmit" value="Придбати">
+</form>
+
+<script>
+document.getElementById('fsubmit').onclick=function() {
+    post_form(this.form)
+};
+</script>
+
+</body>
+
+<style>
+    form {
+        display: inline-block;
+        margin: auto;
+        border: 1px solid;
+    }
+
+    label {
+        display: inline-block;
+        font-weight: bold;
+        width: 250px;
+        margin: 5px 0px;
+    }
+
+    select {
+        display: inline-block;
+        font-weight: bold;
+        width: 150px;
+        margin: 5px 0px;
+    }
+
+    .btn1 {
+        width: 100%;
+    }
+
+    form blockquote {
+        background: #EEE;
+        text-align: center;
+        margin: 0px;
+        padding: 5px 0px;
+        font-style: italic;
+    }
+
+    input:valid {
+        color: green
+    }
+
+    input:invalid {
+        color: red
+    }
+</style>
+</html>
+
